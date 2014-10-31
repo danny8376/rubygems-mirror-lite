@@ -23,6 +23,8 @@
 #    Just add this script to crontab, or
 #    you may wish write a systemd timer if using systemd
 #    (You may want to redirect output on crontab)
+# ----------------------------------------------------------
+#  For detail usage, please read README.md
 # ==========================================================
 require "rubygems"
 require "open-uri"
