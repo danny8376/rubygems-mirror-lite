@@ -105,7 +105,8 @@ def pull(qno, force = false)
 		$failed_gems.delete gem if $failed_gems.include?(gem)
 	end
 
-	fn = "#{gem[0]}-#{gem[1].version}"
+	fn = "#{gem[0]}-#{gem[1].version}#{"-#{gem[2]}" if gem[2] != "ruby"}"
+
 	if not force and
 			File.exist? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
 			File.size? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
