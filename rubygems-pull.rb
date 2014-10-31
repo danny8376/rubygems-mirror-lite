@@ -29,7 +29,7 @@ require "open-uri"
 require "eventmachine"
 require "fileutils"
 
-require "./mirror-conf.rb"
+require "#{__dir__}/mirror-conf.rb"
 
 # download function
 def download(fn)
