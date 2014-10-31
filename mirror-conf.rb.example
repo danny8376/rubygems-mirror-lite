@@ -1,0 +1,6 @@
+# DON'T APPEND THE "/" @ THE END OF EACH SETTINGS
+
+# Mirror source, offical cloudfront as default
+MIRROR_SOURCE = "http://production.cf.rubygems.org"
+# Mirror dest, please change this to where you want
+MIRROR_FOLDER = "/gem_mirror/rubygems"
