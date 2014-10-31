@@ -9,13 +9,15 @@
 #    Sys-Util:
 #      Wget
 # ----------------------------------------------------------
-#  Usage: rubygems-pull.rb [check]
+#  Usage: rubygems-pull.rb [check | refreshdep]
 #  Run without parameter -> normal mirror sync
 #    (Will consume large time when first run)
 #    (Full mirror will take approximately 150GB)
 #  Run with "check" -> ignore specs difference
 #    force to check all gems
-#    ( only download new & failed gems )
+#    (only download new & failed gems)
+#  Run with "refreshdep" -> update & regenerate dependencies
+#    (this will take lots of real time & cpu time)
 # ----------------------------------------------------------
 #  Keep sync:
 #    Just add this script to crontab, or
@@ -36,9 +38,46 @@ def download(fn)
 	}
 end
 
+# generate gem fullname from spec list item
+def gen_fullname(gem)
+	"#{gem[0]}-#{gem[1].version}#{"-#{gem[2]}" if gem[2] != "ruby"}"
+end
+
+# gem dependency list
+def gen_dep(gem_name)
+	$specs.select {|g| g[0] == gem_name} .map {|gem|
+		gemspec = Marshal.load(Zlib::Inflate.inflate(open("#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8/#{gen_fullname gem}.gemspec.rz", "rb"){|f| f.read}))
+
+		{
+			name: gemspec.name,
+			number: gemspec.version.version,
+			platform: gemspec.platform,
+			dependencies: gemspec.dependencies.select{|i| i.type == :runtime}
+				.map{|i| [
+					i.name,
+					i.requirement.requirements.map{|r| r.join(" ")}.join(", ")
+				]}
+		}
+	}
+end
+
+# save dependency data
+def save_dep(gem_name, remained = nil)
+	open("#{MIRROR_FOLDER}/dep_data/#{gem_name}", "wb") {|f|
+		Marshal.dump gen_dep(gem_name), f
+		print "#{gem_name} dependency refreshed! #{remained}\n"
+	}
+rescue => e
+	FileUtils.rm_f "#{MIRROR_FOLDER}/dep_data/#{gem_name}" 
+	$failed_deps.push gem_name
+	print "!!! DEP GEN ERR !!!\n"
+	print "Exception: #{$!}\n"
+	print "Backtrace:\n\t#{e.backtrace.join("\n\t")}\n"
+end
+
 # metadata reader
 def read_metafile
-	specs = Marshal.load(Gem.gunzip(open("#{MIRROR_FOLDER}/mirror/specs.4.8.gz"){|f| f.read}))
+	specs = Marshal.load(Gem.gunzip(open("#{MIRROR_FOLDER}/mirror/specs.4.8.gz", "rb"){|f| f.read}))
 	latest_specs = Marshal.load(Gem.gunzip(open("#{MIRROR_FOLDER}/mirror/latest_specs.4.8.gz", "rb") {|f| f.read}))
 	prerelease_specs = Marshal.load(Gem.gunzip(open("#{MIRROR_FOLDER}/mirror/prerelease_specs.4.8.gz", "rb") {|f| f.read}))
 
@@ -126,7 +165,7 @@ def pull(qno)
 	# check for accidently removed gems (?
 	$failed_gems.delete gem if $failed_gems.include?(gem) and not $specs.include?(gem)
 
-	fn = "#{gem[0]}-#{gem[1].version}#{"-#{gem[2]}" if gem[2] != "ruby"}"
+	fn = gen_fullname gem
 
 	if File.exist? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
 			File.size? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
@@ -166,13 +205,22 @@ end
 
 def purge
 	$specs_rm.each { |fn|
-		File.unlink "#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8/#{fn}.gemspec.rz" if File.exist? "#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8/#{fn}.gemspec.rz"
-		File.unlink "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" if File.exist? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem"
+		FileUtils.rm_f "#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8/#{fn}.gemspec.rz"
+		FileUtils.rm_f "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem"
 	}
+end
+
+def update_dep
+	gem_names = ($refresh_gen_dep ? $specs : $specs_add_c).collect {|g| g[0]}
+	gem_names.uniq!
+	size = gem_names.size
+	gem_names.each_with_index {|g, n| save_dep g, (size - n)}
 end
 
 def finish
 	open("#{MIRROR_FOLDER}/failed_gems", "wb") {|f| Marshal.dump $failed_gems, f}
+	update_dep
+	open("#{MIRROR_FOLDER}/failed_deps", "wb") {|f| Marshal.dump $failed_deps, f}
 	purge
 	EM.stop
 end
@@ -189,18 +237,20 @@ end
 FileUtils.touch "#{MIRROR_FOLDER}/sync_lock"
 
 at_exit {
-	File.unlink "#{MIRROR_FOLDER}/sync_lock"
+	FileUtils.rm_f "#{MIRROR_FOLDER}/sync_lock"
 }
 
 
 # parse ARGV
 $recheck_all_gems = ARGV[0] == "check"
+$refresh_gen_dep = ARGV[0] == "refreshdep"
 
 
 
 FileUtils.mkdir_p [
 	"#{MIRROR_FOLDER}/mirror/gems",
 	"#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8",
+	"#{MIRROR_FOLDER}/dep_data",
 	"#{MIRROR_FOLDER}/meta_backup"
 ]
 
@@ -210,13 +260,11 @@ EM.run {
 	download_metadata {
 		$specs = specs = read_metafile
 
-		begin
-			$failed_gems = open("#{MIRROR_FOLDER}/failed_gems", "rb") {|f| Marshal.load f}
-		rescue
-			$failed_gems = []
-		end
+		$failed_gems = open("#{MIRROR_FOLDER}/failed_gems", "rb") {|f| Marshal.load f} rescue []
+		$failed_deps = open("#{MIRROR_FOLDER}/failed_deps", "rb") {|f| Marshal.load f} rescue []
 
 		$specs_add = $failed_gems + ($recheck_all_gems ? specs : (specs - old_specs))
+		$specs_add_c = $specs_add.dup
 		$specs_rm = old_specs - specs
 
 		print "metadata over!\n"
