@@ -1,4 +1,27 @@
 #!/usr/bin/env ruby
+# ================== Rubygems Mirror LITE ==================
+#  Before use this program, please make a "mirror-conf.rb"
+#  (mirror-conf.rb.example is an example file)
+# ----------------------------------------------------------
+#  Dependency:
+#    Gems:
+#      EventMachine
+#    Sys-Util:
+#      Wget
+# ----------------------------------------------------------
+#  Usage: rubygems-pull.rb [check]
+#  Run without parameter -> normal mirror sync
+#    (Will consume large time when first run)
+#    (Full mirror will take approximately 150GB)
+#  Run with "check" -> ignore specs difference
+#    force to check all gems
+#    ( only download new & failed gems )
+# ----------------------------------------------------------
+#  Keep sync:
+#    Just add this script to crontab, or
+#    you may wish write a systemd timer if using systemd
+#    (You may want to redirect output on crontab)
+# ==========================================================
 require "rubygems"
 require "open-uri"
 require "eventmachine"
@@ -173,6 +196,8 @@ at_exit {
 }
 
 
+# parse ARGV
+$recheck_all_gems = ARGV[0] == "check"
 
 
 
@@ -194,7 +219,7 @@ EM.run {
 			$failed_gems = []
 		end
 
-		$specs_add = $failed_gems + (specs - old_specs)
+		$specs_add = $failed_gems + ($recheck_all_gems ? specs : (specs - old_specs))
 		$specs_rm = old_specs - specs
 
 		print "metadata over!\n"
