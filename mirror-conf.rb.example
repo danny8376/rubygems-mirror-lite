@@ -4,3 +4,6 @@
 MIRROR_SOURCE = "http://production.cf.rubygems.org"
 # Mirror dest, please change this to where you want
 MIRROR_FOLDER = "/gem_mirror/rubygems"
+
+# max parallel downloads
+MAX_PARALLEL_DL = 100

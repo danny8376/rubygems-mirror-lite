@@ -225,7 +225,7 @@ EM.run {
 			finish
 		else
 			$main_dl_queue = []
-			100.times { |n| pull(n) }
+			MAX_PARALLEL_DL.times { |n| pull(n) }
 		end
 	}
 }
