@@ -33,7 +33,7 @@ require "./mirror-conf.rb"
 
 # download function
 def download(fn)
-	EM.system("wget -q -N -O #{MIRROR_FOLDER}/mirror/#{fn} http://production.cf.rubygems.org/#{fn}") { |out, status|
+	EM.system("wget -q -N -O #{MIRROR_FOLDER}/mirror/#{fn} #{MIRROR_SOURCE}/#{fn}") { |out, status|
 		yield status.exitstatus == 0 if block_given?
 	}
 end
