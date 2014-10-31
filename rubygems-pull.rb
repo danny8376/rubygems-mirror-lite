@@ -112,7 +112,7 @@ def download_metadata
 end
 
 # gem downloader !!!
-def pull(qno, force = false)
+def pull(qno)
 	$main_dl_queue[qno * 2] = true # mark as working ( *2 => 0:gemspec 1:gem )
 	$main_dl_queue[qno * 2 + 1] = true
 
@@ -124,41 +124,38 @@ def pull(qno, force = false)
 	end
 
 	# check for accidently removed gems (?
-	if force and not $specs.include?(gem)
-		$failed_gems.delete gem if $failed_gems.include?(gem)
-	end
+	$failed_gems.delete gem if $failed_gems.include?(gem) and not $specs.include?(gem)
 
 	fn = "#{gem[0]}-#{gem[1].version}#{"-#{gem[2]}" if gem[2] != "ruby"}"
 
-	if not force and
-			File.exist? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
+	if File.exist? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
 			File.size? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
 			File.exist? "#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8/#{fn}.gemspec.rz" and
 			File.size? "#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8/#{fn}.gemspec.rz"
 		$main_dl_queue[qno * 2] = false
 		$main_dl_queue[qno * 2 + 1] = false
-		EM.next_tick { pull_finish_check qno, gem, fn, true, force, true } # skipped => process as normal download
+		EM.next_tick { pull_finish_check qno, gem, fn, true, true } # skipped => process as normal download
 		return
 	end
 	download("quick/Marshal.4.8/#{fn}.gemspec.rz") { |res|
 		$main_dl_queue[qno * 2] = false
 		print "#{fn}.gemspec.rz download failed!\n" unless res
-		pull_finish_check qno, gem, fn, res, force
+		pull_finish_check qno, gem, fn, res
 	}
 	download("gems/#{fn}.gem") { |res|
 		$main_dl_queue[qno * 2 + 1] = false
 		print "#{fn}.gem download failed!\n" unless res
-		pull_finish_check qno, gem, fn, res, force
+		pull_finish_check qno, gem, fn, res
 	}
 end
 
-def pull_finish_check(qno, gem, fn, res, force, skip = false)
+def pull_finish_check(qno, gem, fn, res, skip = false)
 	$failed_gems.push gem if not res and not $failed_gems.include?(gem)
 	if $main_dl_queue[qno * 2] or $main_dl_queue[qno * 2 + 1] # gem download process still unfinished
 		return
 	else
 		print "#{fn} #{skip ? "skipped" : "downloaded"}! #{$specs_add.size}\n"
-		$failed_gems.delete gem if force and $failed_gems.include?(gem) # remove failed gems when succeed
+		$failed_gems.delete gem if $failed_gems.include?(gem) # remove failed gems when succeed
 		if $specs_add.empty? and not $main_dl_queue.any?
 			finish
 		else
