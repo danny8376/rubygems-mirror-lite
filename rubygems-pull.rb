@@ -65,12 +65,12 @@ end
 
 # save dependency data
 def save_dep(gem_name, remained = nil)
-	open("#{MIRROR_FOLDER}/mirror/dep_data/#{gem_name}", "wb") {|f|
+	open("#{MIRROR_FOLDER}/dep_data/#{gem_name}", "wb") {|f|
 		Marshal.dump gen_dep(gem_name), f
 		print "#{gem_name} dependency refreshed! #{remained}\n"
 	}
 rescue => e
-	FileUtils.rm_f "#{MIRROR_FOLDER}/mirror/dep_data/#{gem_name}" 
+	FileUtils.rm_f "#{MIRROR_FOLDER}/dep_data/#{gem_name}" 
 	$failed_deps.push gem_name
 	print "!!! DEP GEN ERR !!!\n"
 	print "Exception: #{$!}\n"
@@ -252,7 +252,7 @@ $refresh_gen_dep = ARGV[0] == "refreshdep"
 FileUtils.mkdir_p [
 	"#{MIRROR_FOLDER}/mirror/gems",
 	"#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8",
-	"#{MIRROR_FOLDER}/mirror/dep_data",
+	"#{MIRROR_FOLDER}/dep_data",
 	"#{MIRROR_FOLDER}/meta_backup"
 ]
 
