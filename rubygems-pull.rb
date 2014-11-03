@@ -54,11 +54,22 @@ def gen_dep(gem_name)
       name: gemspec.name,
       number: gemspec.version.version,
       platform: gemspec.platform.to_s, # May be a Gem::Platform instance, need to convert to string
-      dependencies: gemspec.dependencies.select{|i| i.type == :runtime}
-        .map{|i| [
-          i.name,
-          i.requirement.requirements.map{|r| r.join(" ")}.join(", ")
-        ]}
+      dependencies: gemspec.dependencies.select{|i| i.type == :runtime}.inject([]) {|res, i|
+        req = i.requirement.requirements.map{|r| r.join(" ")}.join(", ")
+        case i.name
+        when String # normally expected one.......
+          res << [i.name, req]
+        when Array # fantastic rubygems, you may set mutiple names in a req.......
+          i.name.each {|meQAQ|
+            res << [meQAQ, req] unless meQAQ.include? " " # do some check to prevent weird things.......
+          }
+        when Symbol
+          res << [i.name.to_s, req]
+        else
+          # do nothing here, though rubygems.org seems to force .to_s here OwO
+        end
+        res # alway return this at end to prevent forgotting return res
+      }
     }
   }
 end
