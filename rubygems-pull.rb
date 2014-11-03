@@ -221,7 +221,7 @@ end
 
 def finish
   open("#{MIRROR_FOLDER}/failed_gems", "wb") {|f| Marshal.dump $failed_gems, f}
-  update_dep
+  update_dep if GEN_DEP_DATA
   open("#{MIRROR_FOLDER}/failed_deps", "wb") {|f| Marshal.dump $failed_deps, f}
   purge
   EM.stop
