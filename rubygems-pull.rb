@@ -53,7 +53,7 @@ def gen_dep(gem_name)
     {
       name: gemspec.name,
       number: gemspec.version.version,
-      platform: gemspec.platform,
+      platform: gemspec.platform.to_s, # May be a Gem::Platform instance, need to convert to string
       dependencies: gemspec.dependencies.select{|i| i.type == :runtime}
         .map{|i| [
           i.name,
