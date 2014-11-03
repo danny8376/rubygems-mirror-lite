@@ -1,6 +1,19 @@
 #!/usr/bin/env ruby
-# ==========================================================
-# ==========================================================
+# ==============================================================
+#          This is a simple web server that only handle
+#             /dependencies of rubygems.org's v1 API
+# --------------------------------------------------------------
+#  This is based on dependencies data of Rubygems Mirror LITE
+#  To use this server, you'll need to turn GEN_DEP_DATA on and
+#  generate dependencies data before using.
+# --------------------------------------------------------------
+#  Configuration :
+#    (use the same config file with Rubygems Mirror LITE)
+#    For help of configuration, just read the example file
+# --------------------------------------------------------------
+#  For how to use with gems mirror server,
+#  please read README.md
+# ==============================================================
 require "eventmachine"
 
 require "#{__dir__}/mirror-conf.rb"

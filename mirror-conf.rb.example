@@ -1,21 +1,39 @@
-# DON'T APPEND THE "/" @ THE END OF EACH SETTINGS
+# === Rubygems Mirror LITE Configuration Example File ===
+#  This is an example file and configuration manual OwO
+# =======================================================
 
-# Mirror source, offical cloudfront as default
+# DON'T APPEND THE "/" AT THE END OF FOLLOWING SETTINGS
+# Mirror source, offical cloudfront is default
 MIRROR_SOURCE = "http://production.cf.rubygems.org"
 # Mirror dest, please change this to where you want
 MIRROR_FOLDER = "/gem_mirror/rubygems"
 
-# max parallel downloads
+# ----- max parallel downloads -----
+#  This is the max amount of downloading process
+#  will run at the same time
 MAX_PARALLEL_DL = 25
 
-# Generation of dependencies data
+# ----- Generation of dependencies data -----
+#   dependencies data will locate in
+#   <MIRROR_FOLDER>/dep_data
+#   For how to use it, please read README.md
 GEN_DEP_DATA = true
 
 
 
-# Stub API server related config
-# server socket type ( :tcp => TCP Server  :unix => UNIX Server )
+# ======== Stub API server related config ========
+
+# ----- server socket type -----
+# ( :tcp => TCP Server  :unix => UNIX Server )
+# :unix  : Will use unix daemon socket to listen requests
+#   The sock file will locate in
+#   <Your Mirror Folder Here>/stub_api.sock
+#   with permission 777
 STUB_API_SOCKET_TYPE = :unix
+# ----- listen config -----
+# For use with :tcp type,
+# the following config will be the listen address
+# For use with :unix type, this will be ignored
 STUB_API_TCP = [
   "0.0.0.0", # Bind address
   28080      # Listen port
