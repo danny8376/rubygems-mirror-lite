@@ -7,3 +7,12 @@ MIRROR_FOLDER = "/gem_mirror/rubygems"
 
 # max parallel downloads
 MAX_PARALLEL_DL = 100
+
+
+# Stub API server related config
+# server socket type ( :tcp => TCP Server  :unix => UNIX Server )
+STUB_API_SOCKET_TYPE = :unix
+STUB_API_TCP = [
+  "0.0.0.0", # Bind address
+  28080      # Listen port
+]
