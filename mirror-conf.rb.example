@@ -6,7 +6,7 @@ MIRROR_SOURCE = "http://production.cf.rubygems.org"
 MIRROR_FOLDER = "/gem_mirror/rubygems"
 
 # max parallel downloads
-MAX_PARALLEL_DL = 100
+MAX_PARALLEL_DL = 25
 
 
 # Stub API server related config
