@@ -103,15 +103,15 @@ The following is for [nginx](http://nginx.org):
 
 There is an example file at examples/nginx-server-example.conf
 
-For nginx, we mostly server file direct with nginx itself.
+For nginx, we mostly serve files direct with nginx itself.
 But for dependencies api, we use try_files to get some more performance.
-Therefore, we must link dep_data folder to mirror (where we set as root path).
+Therefore, we must link dep_data folder into mirror folder (where we set as root path).
 (I prefer to make it hidden since it's not file originally located here.)
 
     $ cd /path/to/mirror/folder/mirror
     $ ln -s ../dep_data .dep_data
 
-After make this symbolic link, we can use try_files to directly serve single gem queries.
+After making this symbolic link, we can use try_files to directly serve single gem queries.
 
 And the stub api server will be discussed later.
 
@@ -130,7 +130,7 @@ The stub api server is a ruby script that can run directly.
 
 However, at most time, you won't want to run it manually.
 
-You can write an init.d script for init system, or a service file for systemd system.
+You can write an init.d script for init systems, or a service file for systemd systems.
 
 There is an example for systemd service file at examples/rubygems-dep-api-server.service
 
@@ -144,7 +144,7 @@ You may wish the sync process to be run automatically.
 (It's also recommended to do so.)
 For this purpose, you can write a crontab or systemd timer.
 
-For crontab, just append the following line to /etc/crontab
+For crontab, just append the following line to /etc/crontab, making it run hourly.
 
     0 * * * *   mirror_user      /path/to/where/you/like/rubygems-pull.rb
 
