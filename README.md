@@ -1,8 +1,8 @@
 # Rubygems Mirror LITE
 
 This program can help to full mirror of a remote gems server (mainly [rubygems.org](http://rubygems.org)).
-It's written with [EventMachine](http://rubyeventmachine.com),a ruby event-driven framework,
-and consists of two parts -- a rubygem puller which keep sync with remote gems server and
+It's written with [EventMachine](http://rubyeventmachine.com), a ruby event-driven framework,
+and consists of two parts -- a rubygems puller which keep sync with remote gems server and
 a stub api server which implements dependencies api of rubygems.org.
 
 Notice: This is a tool which is for pure mirroring only.
@@ -69,7 +69,7 @@ System utilities:
 
 ## Usage
 
-You may want to switch some dedicated user first.
+You may want to switch a dedicated user first.
 
     $ sudo su mirror_user
 
@@ -78,7 +78,7 @@ clone the source code to somewhere you like
     $ cd /path/to/where/you/like
     $ git clone
 
-Then copy the mirror-conf.rb.example to mirror-conf.rb, and edit it as you like.
+Then copy the mirror-conf.rb.example to mirror-conf.rb, and edit it as you want.
 
     $ cp mirror-conf.rb.example mirror-conf.rb
     $ vim mirror-conf.rb
@@ -92,7 +92,7 @@ configure the webserver during wainting.
 (There are some arguments for the rubygems-pull.rb script,
 you can get more details in the header comments of that file.)
 
-BTW, the size of full mirror of rubygems is about 150GB.
+BTW, the size of full mirror of rubygems.org is about 150GB.
 
 ---
 
@@ -115,7 +115,7 @@ After make this symbolic link, we can use try_files to directly serve single gem
 
 And the stub api server will be discussed later.
 
-_There may be some more web server configuration._
+_There may be some more web server configurations._
 
 ---
 
@@ -167,14 +167,14 @@ _Maybe will add systemd timer later?_
 
 ## Report bugs
 
-If you find any bugs, welcome to open an issue [here](https://github.com/danny8376/rubygems-mirror-lite/issues).
+If you find any bug, welcome to open an issue [here](https://github.com/danny8376/rubygems-mirror-lite/issues).
 
 ## Running mirror
 
 * [gems.saru.moe](http://gems.saru.moe)
   My testing mirror at Taiwan, which is used for developing this program.
 
-Welcom to put your mirror here :-)
+Welcome to put your mirror here :-)
 
 ## License
 
