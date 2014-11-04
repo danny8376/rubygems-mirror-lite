@@ -176,4 +176,8 @@ If you find any bugs, welcome to open an issue [here](https://github.com/danny83
 
 Welcom to put your mirror here :-)
 
+## License
 
+All source code in this repository is licensed under the MIT license unless
+specified otherwise. A copy of this license can be found in the file "LICENSE"
+in the root directory of this repository.
