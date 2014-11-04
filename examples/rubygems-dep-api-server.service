@@ -1,0 +1,13 @@
+[Unit]
+Description=Rubygems Mirror LITE - Stub API Server
+
+[Service]
+Type=simple
+User=mirror_user
+UidFile=/var/run/rubygems-dep-api-server.pid
+Restart=on-failure
+WorkingDirectory=/path/to/mirror/folder
+ExecStart=/path/to/where/you/like/rubygems-dep-api-server.rb
+
+[Install]
+WantedBy=multi-user.target
