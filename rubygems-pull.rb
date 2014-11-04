@@ -27,16 +27,46 @@
 #  For detail usage, please read README.md
 # ==========================================================
 require "rubygems"
-require "open-uri"
 require "eventmachine"
+require "em-http"
 require "fileutils"
 
 require "#{__dir__}/mirror-conf.rb"
 
+# gen mirror download connection
+def create_conn
+  EM::HttpRequest.new(MIRROR_SOURCE)
+end
+
 # download function
-def download(fn)
-  EM.system("wget -q -N -O #{MIRROR_FOLDER}/mirror/#{fn} #{MIRROR_SOURCE}/#{fn}") { |out, status|
-    yield status.exitstatus == 0 if block_given?
+def download(fn, conn = nil, retried = false, &block)
+  conn = create_conn unless conn
+  http = conn.get path: fn, keepalive: true
+  file = false # waiting for open file
+  http.stream {|chunk|
+    if http.response_header.http_status == 200
+      file = open("#{MIRROR_FOLDER}/mirror/#{fn}", "wb") unless file
+      file.write chunk
+    end
+  }
+  http.callback {
+    file.close if file
+    yield http.response_header.http_status == 200, conn if block_given?
+  }
+  http.errback {
+    file.close if file
+    case http.error
+    when 'connection closed by server' # Keep-Alive connection closed, reconnect & download
+      conn.unbind rescue nil
+      EM.next_tick { download fn, create_conn, false, &block }
+    else
+      print "DL ERR: #{http.error}\n"
+      if retried
+        yield false, conn if block_given?
+      else
+        EM.next_tick { download fn, create_conn, true, &block }
+      end
+    end
   }
 end
 
@@ -107,7 +137,8 @@ def meta_dl(fn)
     FileUtils.cp("#{MIRROR_FOLDER}/mirror/#{fn}", "#{MIRROR_FOLDER}/meta_backup/#{fn}") # backup ori files
   end
   $metadata_dl_list[fn] = true # mark it as downloading
-  download(fn) { |res|
+  download(fn) { |res, rcon|
+    rcon.unbind rescue nil
     $meta_fail = true unless res
     $metadata_dl_list[fn] = false
   }
@@ -164,54 +195,59 @@ def download_metadata
 end
 
 # gem downloader !!!
-def pull(qno)
-  $main_dl_queue[qno * 2] = true # mark as working ( *2 => 0:gemspec 1:gem )
-  $main_dl_queue[qno * 2 + 1] = true
+def pull(qno, conn = nil)
+  conn = create_conn unless conn
+  PIPELINING_REQ.times {|pno|
+    gem = $specs_add.shift
+    break unless gem
 
-  gem = $specs_add.shift
-  unless gem
-    $main_dl_queue[qno * 2] = false
-    $main_dl_queue[qno * 2 + 1] = false
-    return
-  end
+    # mark as downloading
+    $main_dl_queue[qno][pno * 2] = true # for gemspec
+    $main_dl_queue[qno][pno * 2 + 1] = true # for gem
 
-  # check for accidently removed gems (?
-  $failed_gems.delete gem if $failed_gems.include?(gem) and not $specs.include?(gem)
+    # check for accidently removed gems (?
+    $failed_gems.delete gem if $failed_gems.include?(gem) and not $specs.include?(gem)
 
-  fn = gen_fullname gem
+    fn = gen_fullname gem
 
-  if File.exist? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
-      File.size? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
-      File.exist? "#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8/#{fn}.gemspec.rz" and
-      File.size? "#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8/#{fn}.gemspec.rz"
-    $main_dl_queue[qno * 2] = false
-    $main_dl_queue[qno * 2 + 1] = false
-    EM.next_tick { pull_finish_check qno, gem, fn, true, true } # skipped => process as normal download
-    return
-  end
-  download("quick/Marshal.4.8/#{fn}.gemspec.rz") { |res|
-    $main_dl_queue[qno * 2] = false
-    print "#{fn}.gemspec.rz download failed!\n" unless res
-    pull_finish_check qno, gem, fn, res
-  }
-  download("gems/#{fn}.gem") { |res|
-    $main_dl_queue[qno * 2 + 1] = false
-    print "#{fn}.gem download failed!\n" unless res
-    pull_finish_check qno, gem, fn, res
+    if File.exist? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
+        File.size? "#{MIRROR_FOLDER}/mirror/gems/#{fn}.gem" and
+        File.exist? "#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8/#{fn}.gemspec.rz" and
+        File.size? "#{MIRROR_FOLDER}/mirror/quick/Marshal.4.8/#{fn}.gemspec.rz"
+      $main_dl_queue[qno][pno * 2] = false
+      $main_dl_queue[qno][pno * 2 + 1] = false
+      # skip => process as normal download
+      EM.next_tick { pull_finish_check conn, qno, pno, gem, fn, true, true }
+      next
+    end
+    download("quick/Marshal.4.8/#{fn}.gemspec.rz", conn) { |res, rcon|
+      $main_dl_queue[qno][pno * 2] = false
+      print "#{fn}.gemspec.rz download failed!\n" unless res
+      pull_finish_check conn, qno, pno, gem, fn, res
+    }
+    download("gems/#{fn}.gem", conn) { |res|
+      $main_dl_queue[qno][pno * 2 + 1] = false
+      print "#{fn}.gem download failed!\n" unless res
+      pull_finish_check conn, qno, pno, gem, fn, res
+    }
   }
 end
 
-def pull_finish_check(qno, gem, fn, res, skip = false)
+def pull_finish_check(conn, qno, pno, gem, fn, res, skip = false)
+  # add to failed gems when failed
   $failed_gems.push gem if not res and not $failed_gems.include?(gem)
-  if $main_dl_queue[qno * 2] or $main_dl_queue[qno * 2 + 1] # gem download process still unfinished
-    return
-  else
+  # per gem finishing process
+  unless $main_dl_queue[qno][pno * 2] or $main_dl_queue[qno][pno * 2 + 1]
     print "#{fn} #{skip ? "skipped" : "downloaded"}! #{$specs_add.size}\n"
     $failed_gems.delete gem if $failed_gems.include?(gem) # remove failed gems when succeed
-    if $specs_add.empty? and not $main_dl_queue.any?
+  end
+  # when all downloads finished
+  unless $main_dl_queue[qno].any?
+    if $specs_add.empty? and not $main_dl_queue.flatten.any?
       finish
     else
-      pull qno
+      $main_dl_queue[qno].clear
+      pull qno, conn
     end
   end
 end
@@ -285,8 +321,8 @@ EM.run {
     if $specs_add.empty?
       finish
     else
-      $main_dl_queue = []
-      MAX_PARALLEL_DL.times { |n| pull(n) }
+      $main_dl_queue = Array.new(DL_CONNECTIONS) { [] } # will... init array with array in a block OwO
+      DL_CONNECTIONS.times { |n| pull(n) }
     end
   }
 }

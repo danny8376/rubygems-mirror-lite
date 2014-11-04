@@ -62,12 +62,14 @@ Ruby libraries:
 
 * rubygems
 * eventmachine
-
-System utilities:
-
-* wget
+* em-http-request
 
 ## Usage
+
+First of all, you'll need to install Ruby & all required gems
+
+    $ # install ruby with your system's pkg manager or any other way
+    $ gem install eventmachine em-http-request
 
 You may want to switch a dedicated user first.
 
@@ -162,8 +164,7 @@ _Maybe will add systemd timer later?_
 
 ## TODO
 
-* Replace wget system call with EM-HTTP with stream file write.
-  (I think this will remain TODO for a long while :P)
+* Maybe add bundler? (Though I don't think it's required for this tool :P
 
 ## Report bugs
 

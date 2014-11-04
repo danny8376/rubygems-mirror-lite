@@ -6,12 +6,17 @@
 # Mirror source, offical cloudfront is default
 MIRROR_SOURCE = "http://production.cf.rubygems.org"
 # Mirror dest, please change this to where you want
-MIRROR_FOLDER = "/gem_mirror/rubygems"
+MIRROR_FOLDER = "/your/mirror/folder/here"
 
-# ----- max parallel downloads -----
-#  This is the max amount of downloading process
-#  will run at the same time
-MAX_PARALLEL_DL = 25
+# --- amount of keepalive connections ---
+#  This is the amount of connections for downloading
+DL_CONNECTIONS = 25
+# --- http pipelining requests once ---
+#  This is the amount of pipelining requests for each connection
+#  For most HTTP/1.1 web server, this should be supported.
+#  However, some web server doesn't,
+#  this tool doesn't support those servers now.
+PIPELINING_REQ = 5
 
 # ----- Generation of dependencies data -----
 #   dependencies data will locate in
